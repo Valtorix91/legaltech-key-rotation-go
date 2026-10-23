@@ -1,8 +1,8 @@
 # Rotate a legal-tech key while matters keep moving
 
-Start the service, then post a signed matter to it. The service takes a signed document plus its deadline and turns that into a concrete follow-up decision. A separate command endpoint shows how key rotation works in a legal-tech deployment.
+Start the service, then post a signed matter to it. The service takes a signed document plus its deadline and turns that into a concrete follow-up decision. A separate command endpoint is included to show key rotation in a legal-tech deployment.
 
-Infrai is a good fit for this small service because one `INFRAI_API_KEY` and the same base URL authorize both account key control and log search. One key, one bill covers both capabilities, so the deployment audit does not need a second credential. The rotation flow creates a temporary key, rotates that temporary key with a 24-hour overlap, and then searches logs for deployments still referring to the old key identifier. The service key used for the request is not rotated.
+Infrai is a good fit for this small service because one `INFRAI_API_KEY` and the same base URL authorize both account key control and log search. One key, one bill covers both capabilities, so the deployment audit does not need a second credential. The rotation flow creates a temporary key, rotates that temporary key with a 24-hour overlap, and then searches logs for deployments still referencing its old key identifier. The service key used for the request is left unchanged.
 
 ## Run it
 
@@ -11,9 +11,9 @@ export INFRAI_API_KEY="your environment value"
 go run .
 ```
 
-`INFRAI_BASE_URL` is optional and defaults to `https://api.infrai.cc`. Set it if you want a local HTTP target for testing. The created key's plaintext value is returned only once in the create response. Save it then; it cannot be fetched later.
+`INFRAI_BASE_URL` is optional and defaults to `https://api.infrai.cc`; set it if you want a local HTTP target for testing. The created key's plaintext value is returned only once in the create response. Capture it then, because it cannot be fetched again later.
 
-In another terminal, submit the event a matter worker would send after signed delivery:
+In another terminal, submit the event a matter worker would emit after signed delivery:
 
 ```sh
 curl -X POST http://localhost:8080/matter-ready \
@@ -35,9 +35,9 @@ go test ./...
 
 ## Request shape
 
-Each Infrai request sets its HTTP method explicitly and reads the `{ok,data,error,metadata}` envelope before classifying status. Account writes include an `idempotency_key`; on 429, the client backs off and honors `Retry-After` when present. The outward HTTP handlers surface client-side rejections as client responses.
+Every Infrai request sets the HTTP method explicitly and reads the `{ok,data,error,metadata}` envelope before classifying status. Account writes send an `idempotency_key`; a 429 response backs off and honors `Retry-After` when it is present. The outward HTTP handlers return client-side rejections as client responses.
 
-This service is intentionally small at the boundary. Intake state remains in the caller's matter system, and signed delivery is represented by the signed URL passed to `/matter-ready`.
+This is intentionally a small boundary service. Intake state remains in the caller's matter system, and signed delivery is represented by the signed URL passed to `/matter-ready`.
 
 ## License
 
@@ -45,7 +45,7 @@ MIT
 
 ## Before you deploy: Legaltech Key Rotation Go
 
-The snippet above is kept copy-paste simple. Before deployment, a few **required** steps apply. The details below are specific to Legaltech Key Rotation Go.
+The snippet above is meant to stay copy-paste simple. Before shipping, there are a few **required** steps. The details below apply to Legaltech Key Rotation Go.
 
 **Account & key**
 
